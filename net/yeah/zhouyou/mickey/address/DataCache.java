@@ -7,10 +7,8 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class DataCache {
 
@@ -41,50 +39,30 @@ public class DataCache {
 				cm = new HashMap<String, CityToken>();
 
 				// fis = new FileInputStream("bsp_city.config");
-				fis = DataCache.class.getClassLoader().getResourceAsStream("bsp_city.config");
+				fis = DataCache.class.getClassLoader().getResourceAsStream("city.config");
 				InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
 				br = new BufferedReader(isr);
 				String line = null;
 				while ((line = br.readLine()) != null) {
 					String[] ss = line.split(",");
-					if (ss.length == 12) {
-						// 多个名字
-						List<String> names = new ArrayList<String>(3);
-						if (ss[4] != null && ss[4].length() > 0)
-							names.add(ss[4]);
-						if (ss[5] != null && ss[5].length() > 0)
-							names.add(ss[5]);
-						if (ss[6] != null && ss[6].length() > 0) {
-							names.add(ss[6]);
-						}
-						Set<String> nameSet = new HashSet<String>();
-						if (ss[7] != null && ss[7].length() > 0) {
-							for (String name : names) {
-								// 基础数据问题，导致“北京”后面会跟着“京”。
-								if (!name.endsWith(ss[7])) {
-									nameSet.add(name + ss[7]);
-								}
-							}
-						}
-						for (String name : names) {
-							// 如果一个地名只有一个字，那从我的经验上来看，它的识别度通常过低，所以忽略掉。
-							if (name.length() > 1)
-								nameSet.add(name);
-						}
-						for (String name : nameSet) {
-							CityToken ct = new CityToken(ss[1], ss[2], Integer.valueOf(ss[3]), name);
+					String code = ss[0];
+					String parentCode = ss[1];
+					String level = ss[2];
 
-							List<CityToken> ctList = nm.get(name);
-							if (ctList == null) {
-								ctList = new ArrayList<CityToken>();
-								nm.put(name, ctList);
-							}
-							ctList.add(ct);
+					for (int i = 3; i < ss.length; ++i) {
+						String name = ss[i];
+						CityToken ct = new CityToken(code, parentCode, Integer.valueOf(level), name);
 
-							CityToken act = cm.get(ct.getCode());
-							if (act == null || act.getName().length() < ct.getName().length()) {
-								cm.put(ct.getCode(), ct);
-							}
+						List<CityToken> ctList = nm.get(name);
+						if (ctList == null) {
+							ctList = new ArrayList<CityToken>();
+							nm.put(name, ctList);
+						}
+						ctList.add(ct);
+
+						CityToken act = cm.get(ct.getCode());
+						if (act == null || act.getName().length() < ct.getName().length()) {
+							cm.put(ct.getCode(), ct);
 						}
 					}
 				}
