@@ -27,7 +27,6 @@ public class AddressScanner {
 		} else {
 			dfa = fa;
 		}
-
 		System.out.println("DFA init cost:" + (System.currentTimeMillis() - initStart));
 	}
 
