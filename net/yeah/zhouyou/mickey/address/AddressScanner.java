@@ -64,6 +64,7 @@ public class AddressScanner {
 		// 逻辑上 pct 不可能是空的
 		CityToken pct = getPct(res, level);
 
+		// TODO levelMAP没有排序
 		Map<String, List<CityToken>> ctListMap = levelMap.get(level);
 		if (ctListMap != null && ctListMap.size() > 0) {
 			List<Tuple2<String, CityToken>> resList = new ArrayList<Tuple2<String, CityToken>>();
@@ -85,12 +86,13 @@ public class AddressScanner {
 				int lctIdx = -1;
 				for (Tuple2<String, CityToken> ct : resList) {
 					int idx = addrList.indexOf(ct._1);
-					if (lct == null || (idx > 0 && idx < lctIdx)) {
+					if (lct == null || (idx >= 0 && idx < lctIdx)) {
 						lct = ct;
 						lctIdx = idx;
 					}
 				}
-				ctr = resList.get(0);
+//				ctr = resList.get(0);
+				ctr = lct;
 			}
 			if (ctr != null) {
 				res.setAddr(ctr._2, ctr._1, level);

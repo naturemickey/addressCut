@@ -17,4 +17,10 @@ public class Tuple2<K, V> implements Serializable {
 	public static <E, T> Tuple2<E, T> apply(E _1, T _2) {
 		return new Tuple2<E, T>(_1, _2);
 	}
+
+	@Override
+	public String toString() {
+		return "Tuple2 [_1=" + _1 + ", _2=" + _2 + "]";
+	}
+
 }
