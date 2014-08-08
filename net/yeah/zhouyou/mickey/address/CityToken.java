@@ -1,6 +1,10 @@
 package net.yeah.zhouyou.mickey.address;
 
-public class CityToken {
+import java.io.Serializable;
+
+public class CityToken implements Serializable {
+
+	private static final long serialVersionUID = 3571530469280762515L;
 	private String code;
 	private String name;
 	private String parentCode;
