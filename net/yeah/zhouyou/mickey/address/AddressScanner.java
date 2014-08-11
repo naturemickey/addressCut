@@ -2,6 +2,7 @@ package net.yeah.zhouyou.mickey.address;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -9,8 +10,15 @@ import java.util.Set;
 public class AddressScanner {
 
 	private static final DFA dfa;
+	private static final Set<String> dCity;
 
 	static {
+		dCity = new HashSet<String>();
+		dCity.add("北京");
+		dCity.add("上海");
+		dCity.add("天津");
+		dCity.add("重庆");
+
 		long initStart = System.currentTimeMillis();
 		String cacheName = "dfaObj.cache";
 		DFA fa = SerializeUtil.read(cacheName);
@@ -42,6 +50,19 @@ public class AddressScanner {
 			res.setAddr(top, tuple2._1._1, top.getLevel());
 			findNextLevel(res, top.getLevel() + 1, tuple2._2, addrList);
 			findParentLevel(res, top);
+			
+			
+			if (res.getCityAddress() == null && res.getProvinceAddress() != null
+					&& dCity.contains(res.getProvinceAddress())) {
+				// 当只识别到一个地址，并且是直辖市的时候
+				List<CityToken> ctl = DataCache.getNameMap().get(res.getProvinceAddress() + "市");
+				for (CityToken ct : ctl) {
+					if (ct.getParentCode() != null && ct.getParentCode().equals(top.getCode())) {
+						res.setAddr(ct, null, ct.getLevel());
+						break;
+					}
+				}
+			}
 		}
 		return res;
 	}
@@ -90,7 +111,7 @@ public class AddressScanner {
 						lctIdx = idx;
 					}
 				}
-//				ctr = resList.get(0);
+				// ctr = resList.get(0);
 				ctr = lct;
 			}
 			if (ctr != null) {

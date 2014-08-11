@@ -45,6 +45,8 @@ public class DataCache {
 				String line = null;
 				while ((line = br.readLine()) != null) {
 					String[] ss = line.split(",");
+					if(line.length() <= 2)
+						continue;
 					String code = ss[0];
 					String parentCode = ss[1];
 					String level = ss[2];
