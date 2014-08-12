@@ -153,44 +153,40 @@ public class DFA extends FA<DFAState> implements Serializable {
 
 	@Override
 	public List<String> scan(String s) {
-		try {
-			DFAState currentState = this.startState;
-			int currentIdx = 0;
+		DFAState currentState = this.startState;
+		int currentIdx = 0;
 
-			DFAState currentAccepted = null;
-			int currentAcceptedIdx = 0;
+		DFAState currentAccepted = null;
+		int currentAcceptedIdx = 0;
 
-			int fromIdx = 0;
+		int fromIdx = 0;
 
-			char[] bl = s.toCharArray();
-			List<String> res = new ArrayList<String>();
-			for (; currentIdx < bl.length; ++currentIdx) {
-				char a = bl[currentIdx];
-				currentState = currentState.tran(a);
-				if (currentState == null) {
-					if (currentAccepted != null) {
-						res.add(currentAccepted.getName());
+		char[] bl = s.toCharArray();
+		List<String> res = new ArrayList<String>();
+		for (; currentIdx < bl.length; ++currentIdx) {
+			char a = bl[currentIdx];
+			currentState = currentState.tran(a);
+			if (currentState == null) {
+				if (currentAccepted != null) {
+					res.add(currentAccepted.getName());
 
-						fromIdx = currentAcceptedIdx + 1;
-						currentAccepted = null;
-						currentIdx = currentAcceptedIdx;
-					} else {
-						currentIdx = fromIdx;
-						fromIdx = fromIdx + 1;
-					}
-					currentState = this.startState;
-				} else if (currentState.isAccepted()) {
-					currentAccepted = currentState;
-					currentAcceptedIdx = currentIdx;
+					fromIdx = currentAcceptedIdx + 1;
+					currentAccepted = null;
+					currentIdx = currentAcceptedIdx;
+				} else {
+					currentIdx = fromIdx;
+					fromIdx = fromIdx + 1;
 				}
+				currentState = this.startState;
+			} else if (currentState.isAccepted()) {
+				currentAccepted = currentState;
+				currentAcceptedIdx = currentIdx;
 			}
-			if (currentAccepted != null) {
-				res.add(currentAccepted.getName());
-			}
-			return res;
-		} catch (Exception e) {
-			throw new RuntimeException(e);
 		}
+		if (currentAccepted != null) {
+			res.add(currentAccepted.getName());
+		}
+		return res;
 	}
 
 	@Override

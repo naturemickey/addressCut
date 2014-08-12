@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +46,7 @@ public class DataCache {
 				String line = null;
 				while ((line = br.readLine()) != null) {
 					String[] ss = line.split(",");
-					if(line.length() <= 2)
+					if (line.length() <= 2)
 						continue;
 					String code = ss[0];
 					String parentCode = ss[1];
@@ -74,6 +75,14 @@ public class DataCache {
 						ct.parent = cm.get(ct.getParentCode());
 					}
 				}
+				for (List<CityToken> ctl : nm.values()) {
+					Collections.sort(ctl, new Comparator<CityToken>() {
+						@Override
+						public int compare(CityToken o1, CityToken o2) {
+							return o1.getLevel() - o2.getLevel();
+						}
+					});
+				}
 				SerializeUtil.write(Tuple2.apply(nm, cm), cacheName);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
@@ -95,5 +104,4 @@ public class DataCache {
 		nameMap = Collections.unmodifiableMap(nm);
 		codeMap = Collections.unmodifiableMap(cm);
 	}
-
 }
