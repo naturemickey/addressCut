@@ -11,18 +11,7 @@ public class CityToken implements Serializable {
 	private int level;
 	CityToken parent;
 
-	private boolean hasInitParent = false;
-
 	public CityToken getParent() {
-		if (!hasInitParent) {
-			synchronized (CityToken.class) {
-				if (!hasInitParent) {
-					if (parentCode != null)
-						parent = DataCache.getCodeMap().get(parentCode);
-					hasInitParent = true;
-				}
-			}
-		}
 		return parent;
 	}
 

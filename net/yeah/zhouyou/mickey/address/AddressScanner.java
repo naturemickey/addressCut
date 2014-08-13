@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * @deprecated 识别准确率上不如AddressScanner2，所以用AddressScanner2替代这个类
+ */
 public class AddressScanner {
 
 	private static final Set<String> dCity;
@@ -106,6 +109,9 @@ public class AddressScanner {
 
 	private static boolean hasRelationship(CityToken pct, CityToken ct) {
 		if (ct.getParentCode() == null || ct.getLevel() <= pct.getLevel())
+			return false;
+		// 大于两个级别差的关联，相对来说准确率比较低。
+		if (ct.getLevel() - pct.getLevel() > 2)
 			return false;
 		boolean res = ct.getParentCode().equals(pct.getCode());
 		if (!res) {
