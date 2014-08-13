@@ -1,5 +1,6 @@
 package net.yeah.zhouyou.mickey.address;
 
+import static net.yeah.zhouyou.mickey.address.DFAInstance.dfa;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,7 +10,6 @@ import java.util.Set;
 
 public class AddressScanner {
 
-	private static final DFA dfa;
 	private static final Set<String> dCity;
 
 	static {
@@ -18,24 +18,6 @@ public class AddressScanner {
 		dCity.add("上海");
 		dCity.add("天津");
 		dCity.add("重庆");
-
-		long initStart = System.currentTimeMillis();
-		String cacheName = "dfaObj.cache";
-		DFA fa = SerializeUtil.read(cacheName);
-		if (fa == null) {
-			Set<String> nameSet = DataCache.getNameMap().keySet();
-			NFA[] nfas = new NFA[nameSet.size()];
-			int idx = 0;
-			for (String name : nameSet) {
-				nfas[idx++] = NFA.constractNFA(name);
-			}
-			NFA nfa = NFA.or(nfas);
-			dfa = DFA.createDFA(nfa);
-			SerializeUtil.write(dfa, cacheName);
-		} else {
-			dfa = fa;
-		}
-		System.out.println("DFA init cost:" + (System.currentTimeMillis() - initStart));
 	}
 
 	public static Address scan(String txt) {
@@ -50,8 +32,7 @@ public class AddressScanner {
 			res.setAddr(top, tuple2._1._1, top.getLevel());
 			findNextLevel(res, top.getLevel() + 1, tuple2._2, addrList);
 			findParentLevel(res, top);
-			
-			
+
 			if (res.getCityAddress() == null && res.getProvinceAddress() != null
 					&& dCity.contains(res.getProvinceAddress())) {
 				// 当只识别到一个地址，并且是直辖市的时候

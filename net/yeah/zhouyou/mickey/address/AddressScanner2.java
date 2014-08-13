@@ -1,5 +1,7 @@
 package net.yeah.zhouyou.mickey.address;
 
+import static net.yeah.zhouyou.mickey.address.DFAInstance.dfa;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -20,7 +22,6 @@ import java.util.Set;
  */
 public class AddressScanner2 {
 
-	private static final DFA dfa;
 	private static final Set<String> dCity;
 
 	static {
@@ -30,23 +31,6 @@ public class AddressScanner2 {
 		dCity.add("天津");
 		dCity.add("重庆");
 
-		long initStart = System.currentTimeMillis();
-		String cacheName = "dfaObj.cache";
-		DFA fa = SerializeUtil.read(cacheName);
-		if (fa == null) {
-			Set<String> nameSet = DataCache.getNameMap().keySet();
-			NFA[] nfas = new NFA[nameSet.size()];
-			int idx = 0;
-			for (String name : nameSet) {
-				nfas[idx++] = NFA.constractNFA(name);
-			}
-			NFA nfa = NFA.or(nfas);
-			dfa = DFA.createDFA(nfa);
-			SerializeUtil.write(dfa, cacheName);
-		} else {
-			dfa = fa;
-		}
-		System.out.println("DFA init cost:" + (System.currentTimeMillis() - initStart));
 	}
 
 	public static Address scan(String txt) {
@@ -63,16 +47,25 @@ public class AddressScanner2 {
 		CityToken bottom = null;
 		List<CityToken> ctList = new ArrayList<CityToken>();
 
-		String name = addrList.get(0);
-		CityToken firstct = findTopCT(name);
-		res.setAddr(firstct, name, firstct.getLevel());
-		ctList.add(firstct);
+		int i = 0;
 
-		top = firstct;
-		bottom = firstct;
+		while (i < addrListlen) {
+			String name = addrList.get(i++);
+			CityToken firstct = findTopCT(name);
 
-		for (int i = 1; i < addrListlen; ++i) {
-			name = addrList.get(i);
+			// 中国人写地址一般是“省”、“市”、“区”，对于BSP来说，商家也很少会省略“省”和“市”，如果直接写“区”以下的地址，则全国的地址重名的过多了。
+			if (firstct.getLevel() > 3) {
+				continue;
+			}
+			res.setAddr(firstct, name, firstct.getLevel());
+			ctList.add(firstct);
+			top = firstct;
+			bottom = firstct;
+			break;
+		}
+
+		for (; i < addrListlen; ++i) {
+			String name = addrList.get(i);
 			for (CityToken ct : DataCache.getNameMap().get(name)) {
 				if (ct.getLevel() < top.getLevel()) {
 					if (hasRelationship(ct, top)) {
@@ -134,6 +127,9 @@ public class AddressScanner2 {
 
 	private static boolean hasRelationship(CityToken pct, CityToken ct) {
 		if (ct.getParentCode() == null || ct.getLevel() <= pct.getLevel())
+			return false;
+		// 大于两个级别差的关联，相对来说准确率比较低。
+		if (ct.getLevel() - pct.getLevel() > 2)
 			return false;
 		boolean res = ct.getParentCode().equals(pct.getCode());
 		if (!res) {
