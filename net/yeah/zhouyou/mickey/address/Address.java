@@ -3,10 +3,13 @@ package net.yeah.zhouyou.mickey.address;
 public class Address {
 	private CityToken provinceAddress; // 省 level 1
 	private String provinceAddressReal;
+
 	private CityToken cityAddress; // 市 level 2
 	private String cityAddressReal;
+
 	private CityToken areaAddress; // 区 level 3
 	private String areaAddressReal;
+
 	private CityToken townAddress; // 镇/街道办 level 4
 	private String townAddressReal;
 
