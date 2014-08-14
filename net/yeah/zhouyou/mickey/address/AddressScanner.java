@@ -43,8 +43,7 @@ public class AddressScanner {
 		List<String> addrList = dfa.scan(txt);
 
 		Address res = new Address(txt);
-		int addrListLen = addrList.size();
-		if (addrListLen == 0)
+		if (addrList.size() == 0)
 			return res;
 
 		CityToken top = null;
@@ -52,8 +51,7 @@ public class AddressScanner {
 		List<CityToken> ctList = new ArrayList<CityToken>();
 
 		while (!addrList.isEmpty()) {
-			String name = addrList.get(0);
-			removeAddress(addrList, name);
+			String name = getNextAddr(addrList);
 			CityToken firstct = findTopCT(name);
 
 			// 中国人写地址一般是“省”、“市”、“区”，对于BSP来说，商家也很少会省略“省”和“市”，如果直接写“区”以下的地址，则全国的地址重名的过多了。
@@ -68,8 +66,7 @@ public class AddressScanner {
 		}
 
 		while (!addrList.isEmpty()) {
-			String name = addrList.get(0);
-			removeAddress(addrList, name);
+			String name = getNextAddr(addrList);
 
 			for (CityToken ct : DataCache.getNameMap().get(name)) {
 				if (ct.getLevel() < top.getLevel()) {
@@ -112,9 +109,11 @@ public class AddressScanner {
 		return res;
 	}
 
-	private static void removeAddress(List<String> addrList, String name) {
+	private static String getNextAddr(List<String> addrList) {
+		String name = addrList.remove(0);
 		while (addrList.remove(name))
 			;
+		return name;
 	}
 
 	private static void findParentLevel(Address res, CityToken ct) {
