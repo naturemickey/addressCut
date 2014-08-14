@@ -1,15 +1,25 @@
 package net.yeah.zhouyou.mickey.address;
 
 import static net.yeah.zhouyou.mickey.address.DFAInstance.dfa;
+
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
- * @deprecated 识别准确率上不如AddressScanner2，所以用AddressScanner2替代这个类
+ * <pre>
+ * 因AddressScanner对于低级地址中包含高级地址的名称时，会识别出错，出错的原因是：级别高低是第一优先级，文字出现前后是第二优先级。
+ * AddressScanner2这个类尝试只按文字出现前后做的优先级，看看效果。
+ * 如果效果理想，则用AddressScanner2替换AddressScanner。
+ * 
+ * 优先级逻辑(目标是这样的逻辑)：
+ * 1.先出现的地址优先。
+ * 2.当前识别出的地址如果有不同level的，则以高level的优先。
+ * 3.如果当前识别出的地址有多个是同一level的，则以可以与下一个地址匹配上下级关系的优先。
+ * 4.如果当前识别出的地址有多个是同一level的，且都无法与下一个地址配置上下级关系，则任取一个。
+ * </pre>
  */
 public class AddressScanner {
 
@@ -21,90 +31,111 @@ public class AddressScanner {
 		dCity.add("上海");
 		dCity.add("天津");
 		dCity.add("重庆");
+
 	}
+
+	private static Pattern p = Pattern.compile("[\\s　]");
 
 	public static Address scan(String txt) {
 		// 中文地址中的空白是没有意义的
-		txt = txt.replaceAll("[\\s　]", "");
+		txt = p.matcher(txt).replaceAll("");
+		// txt = txt.replaceAll("[\\s　]", "");
 		List<String> addrList = dfa.scan(txt);
 
 		Address res = new Address(txt);
-		Tuple2<Tuple2<String, CityToken>, Map<Integer, Map<String, List<CityToken>>>> tuple2 = findTop(addrList);
-		CityToken top = tuple2._1._2;
-		if (top != null) {
-			res.setAddr(top, tuple2._1._1, top.getLevel());
-			findNextLevel(res, top.getLevel() + 1, tuple2._2, addrList);
-			findParentLevel(res, top);
+		int addrListLen = addrList.size();
+		if (addrListLen == 0)
+			return res;
 
-			if (res.getCityAddress() == null && res.getProvinceAddress() != null
-					&& dCity.contains(res.getProvinceAddress())) {
-				// 当只识别到一个地址，并且是直辖市的时候
-				List<CityToken> ctl = DataCache.getNameMap().get(res.getProvinceAddress() + "市");
-				for (CityToken ct : ctl) {
-					if (ct.getParentCode() != null && ct.getParentCode().equals(top.getCode())) {
-						res.setAddr(ct, null, ct.getLevel());
+		CityToken top = null;
+		CityToken bottom = null;
+		List<CityToken> ctList = new ArrayList<CityToken>();
+
+		while (!addrList.isEmpty()) {
+			String name = addrList.get(0);
+			removeAddress(addrList, name);
+			CityToken firstct = findTopCT(name);
+
+			// 中国人写地址一般是“省”、“市”、“区”，对于BSP来说，商家也很少会省略“省”和“市”，如果直接写“区”以下的地址，则全国的地址重名的过多了。
+			if (firstct.getLevel() > 3) {
+				continue;
+			}
+			res.setAddr(firstct, name, firstct.getLevel());
+			ctList.add(firstct);
+			top = firstct;
+			bottom = firstct;
+			break;
+		}
+
+		while (!addrList.isEmpty()) {
+			String name = addrList.get(0);
+			removeAddress(addrList, name);
+
+			for (CityToken ct : DataCache.getNameMap().get(name)) {
+				if (ct.getLevel() < top.getLevel()) {
+					if (hasRelationship(ct, top)) {
+						top = ct;
+						res.setAddr(ct, name, ct.getLevel());
+						ctList.add(ct);
 						break;
+					}
+				} else if (ct.getLevel() > bottom.getLevel()) {
+					if (hasRelationship(bottom, ct)) {
+						if (ct.getLevel() < 3 || name.length() >= 3
+								|| DataCache.getCodeMap().get(ct.getCode()).getName().endsWith(name)) {
+							bottom = ct;
+							res.setAddr(ct, name, ct.getLevel());
+							ctList.add(ct);
+							break;
+						}
 					}
 				}
 			}
 		}
+
+		for (CityToken ct : ctList) {
+			findParentLevel(res, ct);
+		}
+
+		if (res.getCityAddress() == null && res.getProvinceAddress() != null
+				&& dCity.contains(res.getProvinceAddress())) {
+			// 当只识别到一个地址，并且是直辖市的时候
+			List<CityToken> ctl = DataCache.getNameMap().get(res.getProvinceAddress() + "市");
+			for (CityToken ct : ctl) {
+				if (ct.getParentCode() != null && ct.getParentCode().equals(res.getAddr(1).getCode())) {
+					res.setAddr(ct, null, ct.getLevel());
+					break;
+				}
+			}
+		}
+
 		return res;
 	}
 
-	private static void findParentLevel(Address res, CityToken top) {
-		while (top.getLevel() > 1) {
-			if (top.getParent() == null)
+	private static void removeAddress(List<String> addrList, String name) {
+		while (addrList.remove(name))
+			;
+	}
+
+	private static void findParentLevel(Address res, CityToken ct) {
+		while (ct.getLevel() > 1) {
+			if (ct.getParent() == null)
 				break;
-			if (res.getAddr(top.getLevel() - 1) != null)
+			if (res.getAddr(ct.getLevel() - 1) != null)
 				break;
-			top = top.getParent();
-			res.setAddr(top, null, top.getLevel());
+			ct = ct.getParent();
+			res.setAddr(ct, null, ct.getLevel());
 		}
 	}
 
-	private static void findNextLevel(Address res, int level, Map<Integer, Map<String, List<CityToken>>> levelMap,
-			List<String> addrList) {
-		if (level > 4)
-			return;
-		// 逻辑上 pct 不可能是空的
-		CityToken pct = getPct(res, level);
-
-		Map<String, List<CityToken>> ctListMap = levelMap.get(level);
-		if (ctListMap != null && ctListMap.size() > 0) {
-			List<Tuple2<String, CityToken>> resList = new ArrayList<Tuple2<String, CityToken>>();
-			for (Map.Entry<String, List<CityToken>> e : ctListMap.entrySet()) {
-				String name = e.getKey();
-				List<CityToken> ctList = e.getValue();
-				for (CityToken ct : ctList) {
-					if (hasRelationship(pct, ct)) {
-						resList.add(Tuple2.apply(name, ct));
-					}
-				}
-			}
-
-			Tuple2<String, CityToken> ctr = null;
-			if (resList.size() == 1) {
-				ctr = resList.get(0);
-			} else if (resList.size() > 1) {
-				Tuple2<String, CityToken> lct = null;
-				int lctIdx = -1;
-				for (Tuple2<String, CityToken> ct : resList) {
-					int idx = addrList.indexOf(ct._1);
-					if (lct == null || (idx >= 0 && idx < lctIdx)) {
-						lct = ct;
-						lctIdx = idx;
-					}
-				}
-				// ctr = resList.get(0);
-				ctr = lct;
-			}
-			if (ctr != null) {
-				res.setAddr(ctr._2, ctr._1, level);
-				removeFromCurCache(addrList, ctr._2, levelMap, ctr._1);
-				findParentLevel(res, ctr._2);
+	private static CityToken findTopCT(String name) {
+		CityToken top = null;
+		for (CityToken ct : DataCache.getNameMap().get(name)) {
+			if (top == null || ct.getLevel() < top.getLevel()) {
+				top = ct;
 			}
 		}
-		findNextLevel(res, level + 1, levelMap, addrList);
+		return top;
 	}
 
 	private static boolean hasRelationship(CityToken pct, CityToken ct) {
@@ -123,57 +154,4 @@ public class AddressScanner {
 		}
 		return res;
 	}
-
-	private static CityToken getPct(Address res, int level) {
-		CityToken pct = null;
-		do {
-			pct = res.getAddr(--level);
-		} while (pct == null && level > 0);
-		return pct;
-	}
-
-	/**
-	 * 找到级别最高的那个
-	 */
-	private static Tuple2<Tuple2<String, CityToken>, Map<Integer, Map<String, List<CityToken>>>> findTop(
-			List<String> addrs) {
-		Map<String, List<CityToken>> nameMap = DataCache.getNameMap();
-		CityToken top = null;
-		Map<Integer, Map<String, List<CityToken>>> levelMap = new HashMap<Integer, Map<String, List<CityToken>>>();
-
-		int len = addrs.size();
-		String usedName = null;
-		for (int idx = 0; idx < len; ++idx) {
-			String name = addrs.get(idx);
-			for (CityToken ct : nameMap.get(name)) {
-				if (top == null || ct.getLevel() < top.getLevel()) {
-					top = ct;
-					usedName = name;
-				}
-				Map<String, List<CityToken>> csm = levelMap.get(ct.getLevel());
-				if (csm == null) {
-					csm = new HashMap<String, List<CityToken>>();
-					levelMap.put(ct.getLevel(), csm);
-				}
-				List<CityToken> cs = csm.get(name);
-				if (cs == null) {
-					cs = new ArrayList<CityToken>();
-					csm.put(name, cs);
-				}
-				cs.add(ct);
-			}
-		}
-		removeFromCurCache(addrs, top, levelMap, usedName);
-		return Tuple2.apply(Tuple2.apply(usedName, top), levelMap);
-	}
-
-	private static void removeFromCurCache(List<String> addrs, CityToken ct,
-			Map<Integer, Map<String, List<CityToken>>> levelMap, String usedName) {
-		while (usedName != null && addrs.remove(usedName))
-			;
-		for (Map.Entry<Integer, Map<String, List<CityToken>>> e : levelMap.entrySet()) {
-			e.getValue().remove(usedName);
-		}
-	}
-
 }
