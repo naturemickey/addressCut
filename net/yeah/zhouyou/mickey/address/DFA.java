@@ -199,7 +199,7 @@ public class DFA extends FA<DFAState> implements Serializable {
 		while (!stack.isEmpty()) {
 			DFAState ds = stack.pollFirst();
 			nss.add(ds);
-			sb.append(printState(ds));
+			sb.append(ds.toString());
 			for (DFAState ds2 : ds.getPath().values()) {
 				if (nss.contains(ds2) == false)
 					stack.push(ds2);

@@ -3,6 +3,7 @@ package net.yeah.zhouyou.mickey.address;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 public class FAState<PathDestType> implements Serializable {
 
@@ -11,20 +12,6 @@ public class FAState<PathDestType> implements Serializable {
 	private Map<Character, PathDestType> path = new HashMap<Character, PathDestType>();
 	private String name;
 
-	// private CityToken ct;
-	//
-	// public CityToken getCt() {
-	// return ct;
-	// }
-	//
-	// public void setCt(CityToken ct) {
-	// this.ct = ct;
-	// }
-	//
-	// public int getLevel() {
-	// return ct.getLevel();
-	// }
-	//
 	public boolean isAccepted() {
 		return name != null;
 	}
@@ -43,5 +30,16 @@ public class FAState<PathDestType> implements Serializable {
 
 	public Map<Character, PathDestType> getPath() {
 		return path;
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append('[').append(this).append("]\n");
+		for (Entry<Character, PathDestType> e : this.getPath().entrySet()) {
+			sb.append('\t').append(':').append(e.getKey() == null ? "_e" : e.getKey()).append("->")
+					.append(e.getValue()).append('\n');
+		}
+		return sb.toString();
 	}
 }
