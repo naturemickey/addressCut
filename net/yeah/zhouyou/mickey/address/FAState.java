@@ -31,11 +31,11 @@ public class FAState<PathDestType> implements Serializable {
 	public Map<Character, PathDestType> getPath() {
 		return path;
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append('[').append(this).append("]\n");
+		sb.append('[').append(super.toString()).append("]\n");
 		for (Entry<Character, PathDestType> e : this.getPath().entrySet()) {
 			sb.append('\t').append(':').append(e.getKey() == null ? "_e" : e.getKey()).append("->")
 					.append(e.getValue()).append('\n');

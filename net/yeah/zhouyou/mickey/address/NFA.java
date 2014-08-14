@@ -28,12 +28,12 @@ public class NFA extends FA<Set<NFAState>> {
 		try {
 			NFA res = new NFA();
 			NFAState pn = null;
-			for (char bs : name.toCharArray()) {
+			for (char c : name.toCharArray()) {
 				NFAState cn = new NFAState();
 				if (pn == null) {
-					res.firstState.getPath().put(bs, createSet(cn));
+					res.firstState.getPath().put(c, createSet(cn));
 				} else {
-					pn.getPath().put(bs, createSet(cn));
+					pn.getPath().put(c, createSet(cn));
 				}
 				pn = cn;
 			}
