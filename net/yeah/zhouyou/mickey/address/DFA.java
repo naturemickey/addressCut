@@ -199,7 +199,7 @@ public class DFA extends FA<DFAState> implements Serializable {
 		while (!stack.isEmpty()) {
 			DFAState ds = stack.pollFirst();
 			nss.add(ds);
-			sb.append(ds.toString());
+			sb.append(ds.createString());
 			for (DFAState ds2 : ds.getPath().values()) {
 				if (nss.contains(ds2) == false)
 					stack.push(ds2);
@@ -209,4 +209,8 @@ public class DFA extends FA<DFAState> implements Serializable {
 		return sb.toString();
 	}
 
+	public static void main(String[] args) {
+		DFA dfa = createDFA(NFA.or(NFA.constractNFA("a"), NFA.constractNFA("ac"), NFA.constractNFA("abc")));
+		System.out.println(dfa);
+	}
 }

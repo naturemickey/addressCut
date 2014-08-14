@@ -101,7 +101,7 @@ public class NFA extends FA<Set<NFAState>> {
 		while (!stack.isEmpty()) {
 			NFAState ns = stack.pollFirst();
 			nss.add(ns);
-			sb.append(ns.toString());
+			sb.append(ns.createString());
 			for (Set<NFAState> nss2 : ns.getPath().values()) {
 				for (NFAState ns2 : nss2) {
 					if (nss.contains(ns2) == false)

@@ -32,8 +32,7 @@ public class FAState<PathDestType> implements Serializable {
 		return path;
 	}
 
-	@Override
-	public String toString() {
+	public String createString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append('[').append(super.toString()).append("]\n");
 		for (Entry<Character, PathDestType> e : this.getPath().entrySet()) {
