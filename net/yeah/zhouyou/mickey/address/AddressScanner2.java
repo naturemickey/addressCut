@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * <pre>
@@ -33,10 +34,13 @@ public class AddressScanner2 {
 
 	}
 
+	private static Pattern p = Pattern.compile("[\\s　]");
+
 	public static Address scan(String txt) {
 		// 中文地址中的空白是没有意义的
-		txt = txt.replaceAll("[\\s　]", "");
-		List<String> addrList = dfa.scan(txt.replaceAll("[\\s　]", ""));
+		txt = p.matcher(txt).replaceAll("");
+		// txt = txt.replaceAll("[\\s　]", "");
+		List<String> addrList = dfa.scan(txt);
 
 		Address res = new Address(txt);
 		int addrListLen = addrList.size();

@@ -26,20 +26,15 @@ public class DataCache {
 
 	static {
 		long initStart = System.currentTimeMillis();
-		// final String cacheName = "city_data.cache";
-		// Tuple2<Map<String, List<CityToken>>, Map<String, CityToken>> tuple2 =
-		// SerializeUtil.read(cacheName);
+
 		Map<String, List<CityToken>> nm = new HashMap<String, List<CityToken>>();
 		Map<String, CityToken> cm = new HashMap<String, CityToken>();
-		// if (tuple2 != null) {
-		// nm = tuple2._1;
-		// cm = tuple2._2;
-		// } else {
+
 		InputStream fis = null;
 		BufferedReader br = null;
 		try {
 			// fis = new FileInputStream("bsp_city.config");
-			fis = DataCache.class.getClassLoader().getResourceAsStream("city.config");
+			fis = DataCache.class.getClassLoader().getResourceAsStream("citybasedata.config");
 			InputStreamReader isr = new InputStreamReader(fis, "UTF-8");
 			br = new BufferedReader(isr);
 			String line = null;
@@ -53,8 +48,8 @@ public class DataCache {
 
 				for (int i = 3; i < ss.length; ++i) {
 					String name = ss[i];
-					CityToken ct = new CityToken(code, parentCode, Integer.valueOf(level), name);
 
+					CityToken ct = new CityToken(code, parentCode, Integer.valueOf(level), name);
 					List<CityToken> ctList = nm.get(name);
 					if (ctList == null) {
 						ctList = new ArrayList<CityToken>();
@@ -68,12 +63,7 @@ public class DataCache {
 					}
 				}
 			}
-			// for (Map.Entry<String, CityToken> e : cm.entrySet()) {
-			// CityToken ct = e.getValue();
-			// if (ct.getParentCode() != null) {
-			// ct.parent = cm.get(ct.getParentCode());
-			// }
-			// }
+
 			for (List<CityToken> ctl : nm.values()) {
 				Collections.sort(ctl, new Comparator<CityToken>() {
 					@Override
@@ -88,8 +78,8 @@ public class DataCache {
 					}
 				}
 			}
-			// SerializeUtil.write(Tuple2.apply(nm, cm), cacheName);
 		} catch (Exception e) {
+			e.printStackTrace();
 			throw new RuntimeException(e);
 		} finally {
 			if (br != null)
@@ -105,7 +95,7 @@ public class DataCache {
 					e.printStackTrace();
 				}
 		}
-		// }
+
 		nameMap = Collections.unmodifiableMap(nm);
 		codeMap = Collections.unmodifiableMap(cm);
 		System.out.println("DataCache init cost:" + (System.currentTimeMillis() - initStart));

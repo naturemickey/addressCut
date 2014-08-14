@@ -26,7 +26,7 @@ public class AddressScanner {
 	public static Address scan(String txt) {
 		// 中文地址中的空白是没有意义的
 		txt = txt.replaceAll("[\\s　]", "");
-		List<String> addrList = dfa.scan(txt.replaceAll("[\\s　]", ""));
+		List<String> addrList = dfa.scan(txt);
 
 		Address res = new Address(txt);
 		Tuple2<Tuple2<String, CityToken>, Map<Integer, Map<String, List<CityToken>>>> tuple2 = findTop(addrList);
