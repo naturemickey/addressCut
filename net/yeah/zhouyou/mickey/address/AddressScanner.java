@@ -31,7 +31,6 @@ public class AddressScanner {
 		dCity.add("上海");
 		dCity.add("天津");
 		dCity.add("重庆");
-
 	}
 
 	private static Pattern p = Pattern.compile("[\\s　]");
@@ -77,73 +76,21 @@ public class AddressScanner {
 					res.setAddr(ct, name, ct.getLevel());
 					ctList.add(ct);
 				} else {
-					if (ct.getLevel() < 3 || name.length() >= 3
-							|| DataCache.getCodeMap().get(ct.getCode()).getName().endsWith(name)) {
+					if (ct.getLevel() < 3 // 当前识别到的为省级或市级
+							|| (bottom.getLevel() >= 2 && ct.getLevel() - bottom.getLevel() <= 2) // bottom为市（或以下）级时，当前识别到的与bottom相差在两级以内
+							|| name.length() >= 3 // 当前识别到的地址文字长度至少为3个字
+							|| DataCache.getCodeMap().get(ct.getCode()).getName().endsWith(name) // 当前识别到的地址是一个全称
+					) {
 						bottom = ct;
 						res.setAddr(ct, name, ct.getLevel());
 						ctList.add(ct);
 					} else {
-						// 以下部分copy“代码段1”，代码冗余，以后要精简。
-						if (!addrList.isEmpty()) {
-							String name2 = getNextAddr(addrList);
-							List<CityToken> ccl2 = getccl(top, ct, name2);
-							if (!ccl2.isEmpty()) {
-								// 两级关联之后，就随意取一个。因为此时至少已是三级地址，在同一个区或县内部的冲突就比较小了。
-								CityToken ct2 = ccl2.get(0);
-								if (ct2.getLevel() > ct.getLevel()) {
-									bottom = ct2;
-									res.setAddr(ct, name, ct.getLevel());
-									res.setAddr(ct2, name2, ct2.getLevel());
-									ctList.add(ct);
-									ctList.add(ct2);
-								}
-							}
-						}
+						bottom = getNextBottom(addrList, res, top, bottom, ctList, name, ccl);
 					}
 				}
 			} else if (ccl.size() > 1) {
-				// 代码段1
-				if (!addrList.isEmpty()) {
-					String name2 = getNextAddr(addrList);
-					for (CityToken ct : ccl) {
-						List<CityToken> ccl2 = getccl(top, ct, name2);
-						if (!ccl2.isEmpty()) {
-							// 两级关联之后，就随意取一个。因为此时至少已是三级地址，在同一个区或县内部的冲突就比较小了。
-							CityToken ct2 = ccl2.get(0);
-							if (ct2.getLevel() > ct.getLevel()) {
-								bottom = ct2;
-								res.setAddr(ct, name, ct.getLevel());
-								res.setAddr(ct2, name2, ct2.getLevel());
-								ctList.add(ct);
-								ctList.add(ct2);
-							}
-						}
-					}
-				}
+				bottom = getNextBottom(addrList, res, top, bottom, ctList, name, ccl);
 			}
-
-			// for (CityToken ct : DataCache.getNameMap().get(name)) {
-			// if (ct.getLevel() < top.getLevel()) {
-			// if (hasRelationship(ct, top)) {
-			// top = ct;
-			// res.setAddr(ct, name, ct.getLevel());
-			// ctList.add(ct);
-			// break;
-			// }
-			// } else if (ct.getLevel() > bottom.getLevel()) {
-			// if (hasRelationship(bottom, ct)) {
-			// if (ct.getLevel() < 3 || name.length() >= 3
-			// ||
-			// DataCache.getCodeMap().get(ct.getCode()).getName().endsWith(name))
-			// {
-			// bottom = ct;
-			// res.setAddr(ct, name, ct.getLevel());
-			// ctList.add(ct);
-			// break;
-			// }
-			// }
-			// }
-			// }
 		}
 
 		for (CityToken ct : ctList) {
@@ -163,6 +110,28 @@ public class AddressScanner {
 		}
 
 		return res;
+	}
+
+	private static CityToken getNextBottom(List<String> addrList, Address res, CityToken top, CityToken bottom,
+			List<CityToken> ctList, String name, List<CityToken> ccl) {
+		if (!addrList.isEmpty()) {
+			String name2 = getNextAddr(addrList);
+			for (CityToken cct : ccl) {
+				List<CityToken> ccl2 = getccl(top, cct, name2);
+				if (!ccl2.isEmpty()) {
+					// 两级关联之后，就随意取一个。因为此时至少已是三级地址，在同一个区或县内部的冲突就比较小了。
+					CityToken ct2 = ccl2.get(0);
+					if (ct2.getLevel() > cct.getLevel()) {
+						bottom = ct2;
+						res.setAddr(cct, name, cct.getLevel());
+						res.setAddr(ct2, name2, ct2.getLevel());
+						ctList.add(cct);
+						ctList.add(ct2);
+					}
+				}
+			}
+		}
+		return bottom;
 	}
 
 	/**
@@ -187,7 +156,7 @@ public class AddressScanner {
 						if (cmp > 0) {
 							ccl.clear();
 							ccl.add(ct);
-						}else if(cmp == 0) {
+						} else if (cmp == 0) {
 							ccl.add(ct);
 						}
 					}
