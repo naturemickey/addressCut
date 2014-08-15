@@ -68,26 +68,82 @@ public class AddressScanner {
 		while (!addrList.isEmpty()) {
 			String name = getNextAddr(addrList);
 
-			for (CityToken ct : DataCache.getNameMap().get(name)) {
+			List<CityToken> ccl = getccl(top, bottom, name);
+
+			if (ccl.size() == 1) {
+				CityToken ct = ccl.get(0);
 				if (ct.getLevel() < top.getLevel()) {
-					if (hasRelationship(ct, top)) {
-						top = ct;
+					top = ct;
+					res.setAddr(ct, name, ct.getLevel());
+					ctList.add(ct);
+				} else {
+					if (ct.getLevel() < 3 || name.length() >= 3
+							|| DataCache.getCodeMap().get(ct.getCode()).getName().endsWith(name)) {
+						bottom = ct;
 						res.setAddr(ct, name, ct.getLevel());
 						ctList.add(ct);
-						break;
+					} else {
+						// 以下部分copy“代码段1”，代码冗余，以后要精简。
+						if (!addrList.isEmpty()) {
+							String name2 = getNextAddr(addrList);
+							List<CityToken> ccl2 = getccl(top, ct, name2);
+							if (!ccl2.isEmpty()) {
+								// 两级关联之后，就随意取一个。因为此时至少已是三级地址，在同一个区或县内部的冲突就比较小了。
+								CityToken ct2 = ccl2.get(0);
+								if (ct2.getLevel() > ct.getLevel()) {
+									bottom = ct2;
+									res.setAddr(ct, name, ct.getLevel());
+									res.setAddr(ct2, name2, ct2.getLevel());
+									ctList.add(ct);
+									ctList.add(ct2);
+								}
+							}
+						}
 					}
-				} else if (ct.getLevel() > bottom.getLevel()) {
-					if (hasRelationship(bottom, ct)) {
-						if (ct.getLevel() < 3 || name.length() >= 3
-								|| DataCache.getCodeMap().get(ct.getCode()).getName().endsWith(name)) {
-							bottom = ct;
-							res.setAddr(ct, name, ct.getLevel());
-							ctList.add(ct);
-							break;
+				}
+			} else if (ccl.size() > 1) {
+				// 代码段1
+				if (!addrList.isEmpty()) {
+					String name2 = getNextAddr(addrList);
+					for (CityToken ct : ccl) {
+						List<CityToken> ccl2 = getccl(top, ct, name2);
+						if (!ccl2.isEmpty()) {
+							// 两级关联之后，就随意取一个。因为此时至少已是三级地址，在同一个区或县内部的冲突就比较小了。
+							CityToken ct2 = ccl2.get(0);
+							if (ct2.getLevel() > ct.getLevel()) {
+								bottom = ct2;
+								res.setAddr(ct, name, ct.getLevel());
+								res.setAddr(ct2, name2, ct2.getLevel());
+								ctList.add(ct);
+								ctList.add(ct2);
+							}
 						}
 					}
 				}
 			}
+
+			// for (CityToken ct : DataCache.getNameMap().get(name)) {
+			// if (ct.getLevel() < top.getLevel()) {
+			// if (hasRelationship(ct, top)) {
+			// top = ct;
+			// res.setAddr(ct, name, ct.getLevel());
+			// ctList.add(ct);
+			// break;
+			// }
+			// } else if (ct.getLevel() > bottom.getLevel()) {
+			// if (hasRelationship(bottom, ct)) {
+			// if (ct.getLevel() < 3 || name.length() >= 3
+			// ||
+			// DataCache.getCodeMap().get(ct.getCode()).getName().endsWith(name))
+			// {
+			// bottom = ct;
+			// res.setAddr(ct, name, ct.getLevel());
+			// ctList.add(ct);
+			// break;
+			// }
+			// }
+			// }
+			// }
 		}
 
 		for (CityToken ct : ctList) {
@@ -107,6 +163,38 @@ public class AddressScanner {
 		}
 
 		return res;
+	}
+
+	/**
+	 * 获取能匹配name的，所有可能合法的数据。
+	 */
+	private static List<CityToken> getccl(CityToken top, CityToken bottom, String name) {
+		List<CityToken> ccl = new ArrayList<CityToken>();
+		for (CityToken ct : DataCache.getNameMap().get(name)) {
+			if (ct.getLevel() < top.getLevel()) {
+				if (hasRelationship(ct, top)) {
+					ccl.clear();
+					ccl.add(ct);
+					break;
+				}
+			} else if (ct.getLevel() > bottom.getLevel()) {
+				if (hasRelationship(bottom, ct)) {
+					if (ccl.isEmpty()) {
+						ccl.add(ct);
+					} else {
+						CityToken fct = ccl.get(0);
+						int cmp = fct.getLevel() - ct.getLevel();
+						if (cmp > 0) {
+							ccl.clear();
+							ccl.add(ct);
+						}else if(cmp == 0) {
+							ccl.add(ct);
+						}
+					}
+				}
+			}
+		}
+		return ccl;
 	}
 
 	private static String getNextAddr(List<String> addrList) {
