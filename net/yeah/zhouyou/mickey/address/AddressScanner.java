@@ -38,7 +38,7 @@ public class AddressScanner {
 	public static Address scan(String txt) {
 		// 中文地址中的空白是没有意义的
 		txt = p.matcher(txt).replaceAll("");
-		// txt = txt.replaceAll("[\\s　]", "");
+
 		List<String> addrList = dfa.scan(txt);
 
 		Address res = new Address(txt);
@@ -148,18 +148,10 @@ public class AddressScanner {
 				}
 			} else if (ct.getLevel() > bottom.getLevel()) {
 				if (hasRelationship(bottom, ct)) {
-					if (ccl.isEmpty()) {
-						ccl.add(ct);
-					} else {
-						CityToken fct = ccl.get(0);
-						int cmp = fct.getLevel() - ct.getLevel();
-						if (cmp > 0) {
-							ccl.clear();
-							ccl.add(ct);
-						} else if (cmp == 0) {
-							ccl.add(ct);
-						}
+					if (!ccl.isEmpty() && ccl.get(0).getLevel() > ct.getLevel()) {
+						ccl.clear();
 					}
+					ccl.add(ct);
 				}
 			}
 		}

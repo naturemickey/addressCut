@@ -45,7 +45,7 @@ public class Address {
 	private String subOrigAddr(String addr, String stdAddr, boolean b) {
 		String res = null;
 		int idx = originalAddress.lastIndexOf(stdAddr);
-		if (idx < 0)
+		if (idx < 0 && addr != null)
 			idx = originalAddress.lastIndexOf(addr);
 		if (idx >= 0) {
 			// 保留当前部分的地址。
