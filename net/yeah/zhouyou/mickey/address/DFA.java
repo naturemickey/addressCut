@@ -62,6 +62,7 @@ public class DFA extends FA<DFAState> implements Serializable {
 				ds2.getPath().put(e.getKey(), ds3);
 			}
 		}
+		System.out.println(map.size());
 		DFA dfa = new DFA();
 		dfa.startState = map.get(dss);
 		return dfa;
