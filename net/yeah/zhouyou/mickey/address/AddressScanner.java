@@ -148,10 +148,15 @@ public class AddressScanner {
 				}
 			} else if (ct.getLevel() > bottom.getLevel()) {
 				if (hasRelationship(bottom, ct)) {
-					if (!ccl.isEmpty() && ccl.get(0).getLevel() > ct.getLevel()) {
-						ccl.clear();
-					}
-					ccl.add(ct);
+					if (!ccl.isEmpty()) {
+						if (ccl.get(0).getLevel() > ct.getLevel()) {
+							ccl.clear();
+							ccl.add(ct);
+						} else if (ccl.get(0).getLevel() == ct.getLevel()) {
+							ccl.add(ct);
+						}
+					} else
+						ccl.add(ct);
 				}
 			}
 		}
